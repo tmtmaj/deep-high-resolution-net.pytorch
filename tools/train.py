@@ -180,19 +180,21 @@ def main():
     )
 
     for epoch in range(begin_epoch, cfg.TRAIN.END_EPOCH):
-        lr_scheduler.step()
+        
 
         # train for one epoch
         train(cfg, train_loader, model, criterion, optimizer, epoch,
               final_output_dir, tb_log_dir, writer_dict)
 
-
+        
         # evaluate on validation set
         perf_indicator = validate(
             cfg, valid_loader, valid_dataset, model, criterion,
             final_output_dir, tb_log_dir, writer_dict
         )
 
+        lr_scheduler.step()
+        
         if perf_indicator >= best_perf:
             best_perf = perf_indicator
             best_model = True
