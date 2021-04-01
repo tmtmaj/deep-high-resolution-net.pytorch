@@ -14,7 +14,7 @@ import logging
 import os
 
 from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
+from pycocotools.cocoeval_dacon import COCOeval
 import json_tricks as json
 import numpy as np
 
@@ -70,8 +70,11 @@ class DACONDataset(JointsDataset):
         self.use_gt_bbox = cfg.TEST.USE_GT_BBOX
         self.image_width = cfg.MODEL.IMAGE_SIZE[0]
         self.image_height = cfg.MODEL.IMAGE_SIZE[1]
+        self.fold = cfg.DATASET.FOLD
         self.aspect_ratio = self.image_width * 1.0 / self.image_height
         self.pixel_std = 200
+
+        print(f'data fold： {self.fold}')
 
         self.coco = COCO(self._get_ann_file_keypoint())
 
@@ -124,7 +127,7 @@ class DACONDataset(JointsDataset):
         return os.path.join(
             self.root,
             'annotations',
-            prefix + '_' + self.image_set + '.json'
+            prefix + '_' + self.image_set + '_'+ str(self.fold)+'.json'
         )
 
     def _load_image_set_index(self):
@@ -238,13 +241,8 @@ class DACONDataset(JointsDataset):
 
     def image_path_from_index(self, index):
         """ example: images / train2017 / 000000119993.jpg """
-        file_name = '%012d.jpg' % index
-        if '2014' in self.image_set:
-            file_name = 'COCO_%s_' % self.image_set + file_name
-
-        prefix = 'test2017' if 'test' in self.image_set else self.image_set
-
-        data_name = prefix + '.zip@' if self.data_format == 'zip' else prefix
+        file_name = self.coco.imgs[index]['filename']
+        data_name = 'train_imgs'
 
         image_path = os.path.join(
             self.root, 'images', data_name, file_name)
@@ -319,7 +317,8 @@ class DACONDataset(JointsDataset):
                 'scale': all_boxes[idx][2:4],
                 'area': all_boxes[idx][4],
                 'score': all_boxes[idx][5],
-                'image': int(img_path[idx][-16:-4])
+                'image': idx,
+                'filename':img_path[idx].split('/')[-1]
             })
         # image x person x (keypoints)
         kpts = defaultdict(list)
