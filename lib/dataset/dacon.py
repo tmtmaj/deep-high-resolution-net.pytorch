@@ -71,6 +71,7 @@ class DACONDataset(JointsDataset):
         self.image_width = cfg.MODEL.IMAGE_SIZE[0]
         self.image_height = cfg.MODEL.IMAGE_SIZE[1]
         self.fold = cfg.DATASET.FOLD
+        self.is_test = cfg.DATASET.TEST_SET == 'test_imgs'
         self.aspect_ratio = self.image_width * 1.0 / self.image_height
         self.pixel_std = 200
 
@@ -122,13 +123,20 @@ class DACONDataset(JointsDataset):
 
     def _get_ann_file_keypoint(self):
         """ self.root / annotations / person_keypoints_train2017.json """
-        prefix = 'DACON' \
-            if 'test' not in self.image_set else 'image_info'
-        return os.path.join(
-            self.root,
-            'annotations',
-            prefix + '_' + self.image_set + '_'+ str(self.fold)+'.json'
-        )
+        prefix = 'DACON' 
+        
+        if self.is_test: 
+            return os.path.join(
+                self.root,
+                'annotations',
+                prefix + '_' + self.image_set +'.json'
+            )
+        else:
+            return os.path.join(
+                self.root,
+                'annotations',
+                prefix + '_' + self.image_set + '_'+ str(self.fold)+'.json'
+            )
 
     def _load_image_set_index(self):
         """ image id: int """
@@ -242,7 +250,10 @@ class DACONDataset(JointsDataset):
     def image_path_from_index(self, index):
         """ example: images / train2017 / 000000119993.jpg """
         file_name = self.coco.imgs[index]['filename']
-        data_name = 'train_imgs'
+        if self.is_test:
+            data_name = 'test_imgs'
+        else:
+            data_name = 'train_imgs'
 
         image_path = os.path.join(
             self.root, 'images', data_name, file_name)
